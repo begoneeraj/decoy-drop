@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decoy Drop — Photo Geotag Prank</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<style>
+  :root{
+    --ink:#12181f; --panel:#171e26; --panel-2:#1e2731; --line:#2c3742;
+    --text:#e9e6dc; --text-dim:#9aa5ac; --flare:#d6402c; --signal:#2e8b87; --gold:#d9a441;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --panel:#fbf9f4; --panel-2:#f2eee4; --text:#1c1a15; --text-dim:#5c5648; --line:#d9d1ba; }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    background:
+      radial-gradient(1100px 550px at 12% -10%, rgba(214,64,44,0.10), transparent 60%),
+      radial-gradient(900px 500px at 105% 10%, rgba(46,139,135,0.12), transparent 55%),
+      var(--panel);
+    font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+  }
+  .mono{ font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:980px; margin:0 auto; padding:clamp(18px, 4vw, 40px) clamp(14px, 4vw, 22px) 60px; }
+  header{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .mark{ width:32px;height:32px;border-radius:50%; background:conic-gradient(from 220deg, var(--flare), var(--gold), var(--signal), var(--flare)); box-shadow: inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line); flex-shrink:0; }
+  h1{ font-size:1.15rem; margin:0; letter-spacing:0.02em; }
+  .sub{ color:var(--text-dim); font-size:0.85rem; margin:0 0 24px 44px; }
+  @media (max-width:480px){ .sub{ margin-left:0; } }
+
+  .map-panel{ background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:clamp(14px,3vw,24px); margin-bottom:20px; }
+  .search-row{ display:flex; gap:8px; margin-bottom:12px; }
+  .search-row input{ flex:1 1 auto; }
+  .btn-inline{
+    flex:0 0 auto; padding:0 18px; border-radius:8px; border:1px solid var(--line);
+    background:var(--panel); color:var(--text); font-weight:600; font-size:0.88rem; cursor:pointer;
+  }
+  .btn-inline:hover{ border-color:var(--signal); }
+  #leafletMap{
+    width:100%; height:420px; border-radius:10px; border:1px solid var(--line);
+    background:#0b1014;
+  }
+  @media (max-width:640px){ #leafletMap{ height:300px; } }
+  .leaflet-pane, .leaflet-control{ font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif; }
+  .coord-readout{ margin-top:10px; font-size:0.82rem; color:var(--text-dim); line-height:1.5; }
+  .coord-readout b{ color:var(--text); }
+  .gmaps-link{
+    display:none; margin-left:10px; color:var(--signal); font-size:0.8rem;
+    font-weight:600; text-decoration:none; white-space:nowrap;
+  }
+  .gmaps-link:hover{ text-decoration:underline; }
+
+  main{ display:grid; grid-template-columns: 1fr 1fr; gap:20px; align-items:start; }
+  @media (max-width:840px){ main{ grid-template-columns:1fr; } }
+  @media (max-width:480px){ .row, .row3{ grid-template-columns:1fr; } }
+
+  .panel{ background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:clamp(14px,3vw,24px); }
+  .drop{
+    border:1.5px dashed var(--line); border-radius:12px; padding:24px 20px; text-align:center;
+    cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .drop.over, .drop:hover{ border-color:var(--signal); }
+  .drop input{ display:none; }
+  #preview{ max-width:100%; max-height:220px; border-radius:10px; display:none; margin:0 auto 12px; }
+  .drop-label{ color:var(--text-dim); font-size:0.9rem; }
+  .drop-label b{ color:var(--text); }
+
+  .field{ margin-bottom:16px; }
+  .field:last-child{ margin-bottom:0; }
+  label{ display:block; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:7px; }
+  select, input[type=text]{
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--line);
+    background:var(--panel); color:var(--text); font-size:0.92rem; font-family:inherit;
+  }
+  select:focus, input:focus{ outline:2px solid var(--signal); outline-offset:1px; }
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
+  .checkrow{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .checkrow input{ width:17px; height:17px; accent-color:var(--signal); }
+  .checkrow label{ margin:0; text-transform:none; letter-spacing:0; font-size:0.88rem; color:var(--text); }
+
+  .btn{
+    width:100%; padding:13px 16px; border-radius:9px; border:1px solid var(--line);
+    background:var(--flare); color:#fff8f1; font-weight:700; letter-spacing:0.03em;
+    font-size:0.92rem; cursor:pointer;
+  }
+  .btn:hover{ filter:brightness(1.06); }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .btn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .btn.secondary{ background:var(--panel); color:var(--text); border-color:var(--line); }
+  .btn.secondary:hover{ filter:none; border-color:var(--signal); }
+  .btn-row{ display:flex; gap:10px; }
+  .btn-row .btn{ flex:1 1 0; }
+  @media (max-width:480px){ .btn-row{ flex-direction:column; } }
+
+  .status{ margin-top:14px; font-size:0.85rem; min-height:1.2em; }
+  .status.ok{ color:var(--signal); }
+  .status.err{ color:var(--flare); }
+
+  .disclaimer{ font-size:0.76rem; color:var(--text-dim); line-height:1.6; margin-top:20px; }
+  .disclaimer b{ color:var(--flare); }
+
+  fieldset{ border:none; padding:0; margin:0 0 18px; }
+  legend{ font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:9px; padding:0; }
+
+  .result-wrap{ position:sticky; top:24px; }
+  @media (max-width:840px){ .result-wrap{ position:static; } }
+  #resultImg{ width:100%; border-radius:12px; display:none; box-shadow:0 20px 40px -20px rgba(0,0,0,0.5); }
+  .result-empty{ color:var(--text-dim); font-size:0.85rem; text-align:center; padding:60px 20px; border:1px dashed var(--line); border-radius:12px; }
+
+  .meta-result{ display:none; }
+  .meta-summary{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; margin-bottom:14px; font-size:0.85rem;
+  }
+  .meta-summary .file-name{ font-weight:700; word-break:break-all; }
+  .meta-summary .gps-line{ margin-top:6px; }
+  .meta-summary .gps-line a{ color:var(--signal); font-weight:600; text-decoration:none; margin-left:8px; }
+  .meta-summary .gps-line a:hover{ text-decoration:underline; }
+  .meta-none{ color:var(--text-dim); font-style:italic; }
+  .meta-section{ margin-bottom:14px; }
+  .meta-section:last-child{ margin-bottom:0; }
+  .meta-section h4{
+    margin:0 0 6px; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim);
+  }
+  .meta-table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:8px; }
+  table.meta-table{ width:100%; border-collapse:collapse; font-size:0.82rem; }
+  table.meta-table tr:not(:last-child) td{ border-bottom:1px solid var(--line); }
+  table.meta-table td{ padding:7px 10px; vertical-align:top; }
+  table.meta-table td:first-child{ color:var(--text-dim); white-space:nowrap; width:1%; }
+  table.meta-table td:last-child{ font-family:ui-monospace,"Cascadia Mono",Consolas,monospace; word-break:break-all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark" aria-hidden="true"></div>
+    <h1>Decoy Drop</h1>
+  </header>
+  <p class="sub">Upload a real JPEG, pick a fake place — get back a photo with GPS EXIF pointing there, optionally stamped with a visible map/address overlay.</p>
+
+  <div class="map-panel">
+    <fieldset style="margin:0 0 12px;">
+      <legend>Pinpoint on the map (or use a preset below)</legend>
+    </fieldset>
+    <div class="search-row">
+      <input type="text" id="searchBox" placeholder="Search a place, or paste a Google Maps link…">
+      <button type="button" class="btn-inline" id="searchBtn">Search</button>
+    </div>
+    <div id="leafletMap"></div>
+    <p class="coord-readout">
+      <span id="coordReadout">Drag the pin, click anywhere on the map, or search above to choose a location.</span>
+      <a id="gmapsLink" class="gmaps-link" href="#" target="_blank" rel="noopener noreferrer">Open this spot in Google Maps ↗</a>
+    </p>
+  </div>
+
+  <main>
+    <div class="panel">
+      <fieldset>
+        <legend>Photo</legend>
+        <div class="drop" id="drop">
+          <input type="file" id="file" accept="image/jpeg" />
+          <img id="preview" alt="" />
+          <div class="drop-label" id="dropLabel"><b>Click to choose</b> or drag a JPEG photo here</div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Fake location</legend>
+        <div class="field">
+          <label for="city">Preset</label>
+          <select id="city"></select>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="lat">Latitude</label>
+            <input type="text" id="lat" class="mono" placeholder="40.758000">
+          </div>
+          <div class="field">
+            <label for="lng">Longitude</label>
+            <input type="text" id="lng" class="mono" placeholder="-73.985500">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Visible stamp</legend>
+        <div class="checkrow">
+          <input type="checkbox" id="addStamp" checked>
+          <label for="addStamp">Burn a map/address overlay onto the photo (GPS Map Camera style)</label>
+        </div>
+        <div id="stampFields">
+          <div class="field">
+            <label for="heading">Heading (bold line)</label>
+            <input type="text" id="heading" placeholder="New York, NY, USA">
+          </div>
+          <div class="field">
+            <label for="address">Address line</label>
+            <input type="text" id="address" placeholder="Times Square, Manhattan, New York, NY 10036, USA">
+          </div>
+          <div class="row3">
+            <div class="field">
+              <label for="gmtOffset">GMT offset</label>
+              <input type="text" id="gmtOffset" class="mono" placeholder="-04:00">
+            </div>
+            <div class="field" style="grid-column: span 2;">
+              <label for="timestamp">Date &amp; time shown</label>
+              <input type="text" id="timestamp" placeholder="leave blank = now">
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>EXIF details (optional)</legend>
+        <div class="row">
+          <div class="field">
+            <label for="make">Camera make</label>
+            <input type="text" id="make" placeholder="Apple">
+          </div>
+          <div class="field">
+            <label for="model">Camera model</label>
+            <input type="text" id="model" placeholder="iPhone 15 Pro">
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="btn-row">
+        <button class="btn" id="submit" disabled>Geotag &amp; download</button>
+        <button class="btn secondary" id="inspectBtn" disabled>Extract metadata only</button>
+      </div>
+      <div class="status" id="status"></div>
+
+      <p class="disclaimer">This edits real photo pixels and metadata. Use it for jokes among friends who are in on it —
+        <b>not</b> to fake proof of whereabouts for anything that actually matters (alibis, safety check-ins, insurance, etc.).
+        The photo processing runs entirely on your machine; map tiles and place search are fetched live from OpenStreetMap.</p>
+    </div>
+
+    <div class="result-wrap">
+      <img id="resultImg" alt="Geotagged result" />
+      <div class="meta-result" id="metaResult"></div>
+      <div class="result-empty" id="resultEmpty">Your geotagged photo — or an extracted metadata report — will show up here.</div>
+    </div>
+  </main>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

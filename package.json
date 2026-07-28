@@ -1,0 +1,16 @@
+{
+  "name": "decoy-drop",
+  "version": "1.0.0",
+  "description": "Local tool: embeds a fake GPS geotag into a photo's EXIF data for pranking friends.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "leaflet": "^1.9.4",
+    "multer": "^2.0.0",
+    "piexifjs": "^1.0.6",
+    "sharp": "^0.35.3"
+  }
+}
