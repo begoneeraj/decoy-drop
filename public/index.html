@@ -190,9 +190,17 @@
         <legend>Visible stamp</legend>
         <div class="checkrow">
           <input type="checkbox" id="addStamp" checked>
-          <label for="addStamp">Burn a map/address overlay onto the photo (GPS Map Camera style)</label>
+          <label for="addStamp">Burn a map/address overlay onto the photo</label>
         </div>
         <div id="stampFields">
+          <div class="field">
+            <label for="stampStyle">Stamp style</label>
+            <select id="stampStyle">
+              <option value="camera">Classic — GPS Map Camera (map thumbnail + bottom band)</option>
+              <option value="minimal">Minimal — small corner badge</option>
+              <option value="retro">Retro — digicam-style amber timestamp</option>
+            </select>
+          </div>
           <div class="field">
             <label for="heading">Heading (bold line)</label>
             <input type="text" id="heading" placeholder="New York, NY, USA">

@@ -69,7 +69,7 @@
   const $ = (id) => document.getElementById(id);
   const drop = $("drop"), fileInput = $("file"), preview = $("preview"), dropLabel = $("dropLabel");
   const citySel = $("city"), latIn = $("lat"), lngIn = $("lng");
-  const addStampChk = $("addStamp"), stampFields = $("stampFields");
+  const addStampChk = $("addStamp"), stampFields = $("stampFields"), stampStyleSel = $("stampStyle");
   const headingIn = $("heading"), addressIn = $("address"), gmtOffsetIn = $("gmtOffset"), timestampIn = $("timestamp");
   const makeIn = $("make"), modelIn = $("model");
   const submitBtn = $("submit"), inspectBtn = $("inspectBtn"), status = $("status");
@@ -325,6 +325,7 @@
     if (modelIn.value.trim()) form.append("model", modelIn.value.trim());
     form.append("addStamp", addStampChk.checked ? "true" : "false");
     if (addStampChk.checked) {
+      form.append("stampStyle", stampStyleSel.value);
       form.append("heading", headingIn.value.trim());
       form.append("address", addressIn.value.trim());
       form.append("gmtOffset", gmtOffsetIn.value.trim() || "+00:00");

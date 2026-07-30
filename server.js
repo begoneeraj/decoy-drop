@@ -210,7 +210,7 @@ function fitText(text, size0, minSize, bold, maxWidth, maxLines) {
   return { size, lines };
 }
 
-function buildStampSvg({ width, height, heading, address, lat, lng, dateLine, gmtOffset }) {
+function buildStampCamera({ width, height, heading, address, lat, lng, dateLine, gmtOffset }) {
   // Base scale off the smaller dimension so a narrow/tall screenshot doesn't get
   // an oversized band sized as if it were a wide landscape photo.
   const baseUnit = Math.min(width, height);
@@ -287,6 +287,124 @@ function buildStampSvg({ width, height, heading, address, lat, lng, dateLine, gm
 </svg>`;
 }
 
+// Compact rounded badge in the bottom-left corner: a pin dot, the heading,
+// address, and coordinates/date — no fake map thumbnail, much smaller footprint.
+function buildStampMinimal({ width, height, heading, address, lat, lng, dateLine }) {
+  const baseUnit = Math.min(width, height);
+  const pad = Math.max(14, baseUnit * 0.03);
+  const innerPad = pad * 0.75;
+  const dotR = baseUnit * 0.016;
+
+  const headingSize0 = Math.max(12, baseUnit * 0.042);
+  const lineSize0 = Math.max(10, baseUnit * 0.026);
+  const minHeadingSize = Math.max(11, headingSize0 * 0.6);
+  const minLineSize = Math.max(9, lineSize0 * 0.6);
+
+  const maxTextWidth = Math.min(width - pad * 2 - dotR * 2 - innerPad * 3, baseUnit * 0.95);
+  const latLngDate = `${lat.toFixed(6)}°, ${lng.toFixed(6)}°  ·  ${dateLine}`;
+
+  const fitted = [
+    { ...fitText(heading, headingSize0, minHeadingSize, true, maxTextWidth, 1), weight: 700, mono: false },
+    ...(address
+      ? [{ ...fitText(address, lineSize0, minLineSize, false, maxTextWidth, 1), weight: 400, dim: true }]
+      : []),
+    { ...fitText(latLngDate, lineSize0 * 0.94, minLineSize * 0.94, false, maxTextWidth, 2), weight: 400, mono: true },
+  ];
+
+  let renderLines = [];
+  for (const f of fitted) {
+    for (const text of f.lines) renderLines.push({ text, size: f.size, weight: f.weight, mono: f.mono, dim: f.dim });
+  }
+
+  const lineGap = 1.35;
+  let textHeight = 0;
+  for (const l of renderLines) textHeight += l.size * lineGap;
+
+  let usedWidth = 0;
+  for (const l of renderLines) usedWidth = Math.max(usedWidth, estimateWidth(l.text, l.size, l.weight === 700));
+
+  const badgeWidth = Math.min(width - pad * 2, usedWidth + innerPad * 2 + dotR * 2 + innerPad * 0.7);
+  const badgeHeight = Math.max(dotR * 2 + innerPad * 2, textHeight + innerPad * 2);
+
+  const bx = pad;
+  const by = height - pad - badgeHeight;
+  const textX = bx + innerPad + dotR * 2 + innerPad * 0.7;
+
+  let ty = by + innerPad + renderLines[0].size * 0.85;
+  const textEls = renderLines
+    .map((l, i) => {
+      const y = i === 0 ? ty : (ty += renderLines[i - 1].size * lineGap);
+      const fill = l.dim ? "#d8d8d8" : "#ffffff";
+      const family = l.mono ? "ui-monospace, Consolas, monospace" : "Arial, Helvetica, sans-serif";
+      return `<text x="${textX}" y="${y}" font-family="${family}" font-size="${l.size.toFixed(1)}" font-weight="${l.weight}" fill="${fill}">${escapeXml(l.text)}</text>`;
+    })
+    .join("\n    ");
+
+  return `
+<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+  <rect x="${bx}" y="${by}" width="${badgeWidth}" height="${badgeHeight}" rx="${badgeHeight * 0.22}" fill="#000000" fill-opacity="0.5"/>
+  <circle cx="${bx + innerPad + dotR}" cy="${by + badgeHeight / 2}" r="${dotR}" fill="#2e8b87" stroke="#ffffff" stroke-width="${dotR * 0.18}"/>
+  ${textEls}
+</svg>`;
+}
+
+// Old-digicam look: amber monospace date/time burned into the bottom-right
+// corner, no background band — just a dark stroke behind the glyphs for legibility.
+function buildStampRetro({ width, height, heading, address, lat, lng, dateLine, gmtOffset }) {
+  const baseUnit = Math.min(width, height);
+  const pad = Math.max(16, baseUnit * 0.035);
+  const maxTextWidth = width - pad * 2;
+
+  const dateSize0 = Math.max(14, baseUnit * 0.05);
+  const labelSize0 = Math.max(10, baseUnit * 0.028);
+  const minDateSize = Math.max(12, dateSize0 * 0.6);
+  const minLabelSize = Math.max(9, labelSize0 * 0.6);
+
+  const locLabel = [heading, address].filter(Boolean).join(" — ");
+  const dateFit = fitText(dateLine, dateSize0, minDateSize, true, maxTextWidth, 1);
+  const gmtFit = fitText(
+    `GMT ${gmtOffset}   ${lat.toFixed(5)}°, ${lng.toFixed(5)}°`,
+    labelSize0 * 0.94,
+    minLabelSize * 0.94,
+    false,
+    maxTextWidth,
+    1
+  );
+
+  const lines = [];
+  if (locLabel) {
+    const locFit = fitText(locLabel, labelSize0, minLabelSize, false, maxTextWidth, 1);
+    lines.push({ text: locFit.lines[0], size: locFit.size, weight: 400, color: "#ffffff", mono: false });
+  }
+  lines.push({ text: dateFit.lines[0], size: dateFit.size, weight: 700, color: "#ff9425", mono: true });
+  lines.push({ text: gmtFit.lines[0], size: gmtFit.size, weight: 400, color: "#ffcf94", mono: true });
+
+  const lineGap = 1.3;
+  let blockHeight = 0;
+  for (const l of lines) blockHeight += l.size * lineGap;
+
+  let ty = height - pad - blockHeight + lines[0].size * 0.85;
+  const textEls = lines
+    .map((l, i) => {
+      const y = i === 0 ? ty : (ty += lines[i - 1].size * lineGap);
+      const family = l.mono ? "ui-monospace, Consolas, monospace" : "Arial, Helvetica, sans-serif";
+      const strokeW = Math.max(1, l.size * 0.05).toFixed(1);
+      return `<text x="${width - pad}" y="${y}" text-anchor="end" font-family="${family}" font-size="${l.size.toFixed(1)}" font-weight="${l.weight}" fill="${l.color}" stroke="#00000090" stroke-width="${strokeW}" paint-order="stroke">${escapeXml(l.text)}</text>`;
+    })
+    .join("\n  ");
+
+  return `
+<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+  ${textEls}
+</svg>`;
+}
+
+function buildStampSvg({ style, ...opts }) {
+  if (style === "minimal") return buildStampMinimal(opts);
+  if (style === "retro") return buildStampRetro(opts);
+  return buildStampCamera(opts);
+}
+
 async function applyVisibleStamp(jpegBuffer, opts) {
   const img = sharp(jpegBuffer).rotate();
   const meta = await img.metadata();
@@ -328,7 +446,11 @@ app.post("/api/geotag", upload.single("photo"), async (req, res) => {
       const heading = (req.body.heading || "").trim() || "Unknown Location";
       const address = (req.body.address || "").trim();
       const gmtOffset = (req.body.gmtOffset || "+00:00").trim();
+      const stampStyle = ["camera", "minimal", "retro"].includes(req.body.stampStyle)
+        ? req.body.stampStyle
+        : "camera";
       outBuffer = await applyVisibleStamp(outBuffer, {
+        style: stampStyle,
         heading,
         address,
         lat,
