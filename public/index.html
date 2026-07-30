@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Decoy Drop — Photo Geotag Prank</title>
+<title>Decoy Drop — Fake Geotag Generator &amp; Metadata Extractor</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='40' y2='40' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%23d6402c'/%3E%3Cstop offset='55%25' stop-color='%23d9a441'/%3E%3Cstop offset='100%25' stop-color='%232e8b87'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M20 2c-8.28 0-15 6.6-15 14.7 0 10.7 12.4 20.4 14.1 21.6.5.4 1.3.4 1.8 0C22.6 37.1 35 27.4 35 16.7 35 8.6 28.28 2 20 2z' fill='url(%23g)'/%3E%3Ccircle cx='20' cy='16' r='6.4' fill='%2312181f'/%3E%3Ccircle cx='20' cy='16' r='2.6' fill='%23fff8f1'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <style>
   :root{
@@ -25,9 +26,11 @@
   .mono{ font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-variant-numeric:tabular-nums; }
   .wrap{ max-width:980px; margin:0 auto; padding:clamp(18px, 4vw, 40px) clamp(14px, 4vw, 22px) 60px; }
   header{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
-  .mark{ width:32px;height:32px;border-radius:50%; background:conic-gradient(from 220deg, var(--flare), var(--gold), var(--signal), var(--flare)); box-shadow: inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line); flex-shrink:0; }
+  .logo-mark{ width:38px; height:38px; flex-shrink:0; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.35)); }
+  .brand-text{ display:flex; flex-direction:column; gap:2px; }
   h1{ font-size:1.15rem; margin:0; letter-spacing:0.02em; }
-  .sub{ color:var(--text-dim); font-size:0.85rem; margin:0 0 24px 44px; }
+  .tagline{ margin:0; font-size:0.72rem; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-dim); }
+  .sub{ color:var(--text-dim); font-size:0.85rem; margin:0 0 24px 50px; }
   @media (max-width:480px){ .sub{ margin-left:0; } }
 
   .map-panel{ background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:clamp(14px,3vw,24px); margin-bottom:20px; }
@@ -137,8 +140,22 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="mark" aria-hidden="true"></div>
-    <h1>Decoy Drop</h1>
+    <svg class="logo-mark" viewBox="0 0 40 40" aria-hidden="true">
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#d6402c"/>
+          <stop offset="55%" stop-color="#d9a441"/>
+          <stop offset="100%" stop-color="#2e8b87"/>
+        </linearGradient>
+      </defs>
+      <path d="M20 2c-8.28 0-15 6.6-15 14.7 0 10.7 12.4 20.4 14.1 21.6.5.4 1.3.4 1.8 0C22.6 37.1 35 27.4 35 16.7 35 8.6 28.28 2 20 2z" fill="url(#logoGrad)"/>
+      <circle cx="20" cy="16" r="6.4" fill="#12181f"/>
+      <circle cx="20" cy="16" r="2.6" fill="#fff8f1"/>
+    </svg>
+    <div class="brand-text">
+      <h1>Decoy Drop</h1>
+      <p class="tagline">Fake Geotag Generator &amp; Metadata Extractor</p>
+    </div>
   </header>
   <p class="sub">Upload a real JPEG, pick a fake place — get back a photo with GPS EXIF pointing there, optionally stamped with a visible map/address overlay.</p>
 
