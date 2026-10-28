@@ -1,4 +1,13 @@
+<p align="center"><img src="./docs/readme/hero.svg" width="100%" alt="Decoy Drop — Every photo tells a location story." /></p>
+
 # Decoy Drop
+
+**Every photo tells a location story.**
+
+[Quick start](#getting-started) · [Architecture](#how-it-works) · [License](#license)
+
+<table><tr><td width="33%" valign="top"><h3>Inspect the invisible</h3><p>Read camera, timestamp, and GPS metadata.</p></td><td width="33%" valign="top"><h3>Explore geotags</h3><p>Pick coordinates and generate a tagged JPEG.</p></td><td width="33%" valign="top"><h3>Process locally</h3><p>Photos are processed on your own server.</p></td></tr></table>
+
 
 A local web app with two tools for playing with photo location data:
 
@@ -30,6 +39,8 @@ Built for pranking friends ("look, I'm in Tokyo!") — not for faking proof of w
 ![Metadata extractor output](docs/screenshot-metadata.png)
 
 ## Getting started
+
+Requires **Node.js 20+**. Clone this repository and open its directory first.
 
 ```bash
 npm install
